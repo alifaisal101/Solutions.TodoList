@@ -10,9 +10,6 @@ on:
       - develop
       - master
 
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/solutions.todolist.webapi
-
 jobs:
   build-and-test:
     name: Build & Test
@@ -59,8 +56,8 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+            ghcr.io/${{ github.repository_owner }}/solutions.todolist.webapi:latest
+            ghcr.io/${{ github.repository_owner }}/solutions.todolist.webapi:${{ steps.tag.outputs.tag }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -69,10 +66,6 @@ jobs:
     needs: build-and-test
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/develop' }}
-    env:
-      IMAGE_NAME: ${{ env.IMAGE_NAME }}
-      TAG: ${{ needs.build-and-test.outputs.image-tag }}
-      REMOTE_DIR: /srv/solutions.todolist/dev
     steps:
       - name: Install ssh client
         run: sudo apt-get update && sudo apt-get install -y openssh-client
@@ -89,23 +82,22 @@ jobs:
 
       - name: Deploy to develop server
         run: |
+          TAG=${{ needs.build-and-test.outputs.image-tag }}
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/solutions.todolist.webapi"
           echo "Deploying $IMAGE_NAME:$TAG to develop server ${{ secrets.DEV_SERVER_HOST }}"
           ssh -o StrictHostKeyChecking=yes "${{ secrets.DEV_SERVER_USER }}@${{ secrets.DEV_SERVER_HOST }}" \
             "set -e
-             cd $REMOTE_DIR
+             cd /srv/solutions.todolist/dev
              export IMAGE_TAG=${TAG}
              docker compose pull
              docker compose up -d --no-deps --build
              docker image prune -f || true"
+
   deploy-prod:
     name: Deploy to Master/Prod Server
     needs: build-and-test
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/master' }}
-    env:
-      IMAGE_NAME: ${{ env.IMAGE_NAME }}
-      TAG: ${{ needs.build-and-test.outputs.image-tag }}
-      REMOTE_DIR: /srv/solutions.todolist/prod
     steps:
       - name: Install ssh client
         run: sudo apt-get update && sudo apt-get install -y openssh-client
@@ -122,10 +114,12 @@ jobs:
 
       - name: Deploy to prod server
         run: |
+          TAG=${{ needs.build-and-test.outputs.image-tag }}
+          IMAGE_NAME="ghcr.io/${{ github.repository_owner }}/solutions.todolist.webapi"
           echo "Deploying $IMAGE_NAME:$TAG to prod server ${{ secrets.PROD_SERVER_HOST }}"
           ssh -o StrictHostKeyChecking=yes "${{ secrets.PROD_SERVER_USER }}@${{ secrets.PROD_SERVER_HOST }}" \
             "set -e
-             cd $REMOTE_DIR
+             cd /srv/solutions.todolist/prod
              export IMAGE_TAG=${TAG}
              docker compose pull
              docker compose up -d --no-deps --build
