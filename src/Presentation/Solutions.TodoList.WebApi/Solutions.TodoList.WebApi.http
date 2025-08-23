@@ -1,0 +1,6 @@
+@Solutions.TodoList.WebApi_HostAddress = http://localhost:5249
+
+GET {{Solutions.TodoList.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
