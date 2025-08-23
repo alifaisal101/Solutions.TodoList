@@ -1,0 +1,118 @@
+name: CI / CD
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+  pull_request:
+    branches:
+      - develop
+      - master
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/solutions.todolist.webapi
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore src/Presentation/Solutions.TodoList.WebApi/Solutions.TodoList.WebApi.csproj
+
+      - name: Build
+        run: dotnet build src/Presentation/Solutions.TodoList.WebApi/Solutions.TodoList.WebApi.csproj -c Release --no-restore
+
+      - name: Test
+        run: |
+          dotnet test test/Solutions.TodoList.UnitTests/Solutions.TodoList.UnitTests.csproj --no-build --verbosity normal || exit 1
+
+      - name: Create image tag
+        id: tag
+        run: |
+          SHORT_SHA=${GITHUB_SHA::8}
+          TAG="${SHORT_SHA}"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master'
+    steps:
+      - name: Determine environment
+        id: env
+        run: |
+          if [ "${GITHUB_REF##*/}" = "develop" ]; then
+            echo "env=dev" >> $GITHUB_OUTPUT
+            echo "host=${{ secrets.DEV_SERVER_HOST }}" >> $GITHUB_OUTPUT
+            echo "user=${{ secrets.DEV_SERVER_USER }}" >> $GITHUB_OUTPUT
+            echo "ssh_key=${{ secrets.DEV_SSH_KEY }}" >> $GITHUB_OUTPUT
+            echo "compose_file=docker-compose.dev.yml" >> $GITHUB_OUTPUT
+          else
+            echo "env=prod" >> $GITHUB_OUTPUT
+            echo "host=${{ secrets.PROD_SERVER_HOST }}" >> $GITHUB_OUTPUT
+            echo "user=${{ secrets.PROD_SERVER_USER }}" >> $GITHUB_OUTPUT
+            echo "ssh_key=${{ secrets.PROD_SSH_KEY }}" >> $GITHUB_OUTPUT
+            echo "compose_file=docker-compose.prod.yml" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install ssh client
+        run: sudo apt-get update && sudo apt-get install -y openssh-client
+
+      - name: Setup SSH key
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ steps.env.outputs.ssh_key }}
+
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ steps.env.outputs.host }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy to server (pull & restart)
+        run: |
+          TAG=${{ needs.build-and-test.outputs.image-tag }}
+          # full image reference:
+          IMAGE=${{ env.IMAGE_NAME }}:${TAG}
+          echo "Deploying $IMAGE to ${{ steps.env.outputs.host }} (${{ steps.env.outputs.env }})"
+
+          ssh -o StrictHostKeyChecking=yes "${{ steps.env.outputs.user }}@${{ steps.env.outputs.host }}" <<'SSH_EOF'
+            set -e
+            cd /srv/solutions.todolist/${{ steps.env.outputs.env }}
+            # update compose file to reference TAG (or you can use env var IMAGE_TAG)
+            # Replace a placeholder IMAGE_TAG in compose or export env
+            export IMAGE_TAG=${TAG}
+            docker compose pull
+            docker compose up -d --no-deps --build
+            docker image prune -f || true
+SSH_EOF
