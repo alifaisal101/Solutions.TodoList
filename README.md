@@ -26,8 +26,6 @@ This document outlines the technical design, requirements, structure, and API co
 ## 2. Project Structure
 
 ```
-├── docs
-│   └── db
 ├── src
 │   ├── Core
 │   │   ├── Solutions.TodoList.Application
@@ -57,7 +55,6 @@ This document outlines the technical design, requirements, structure, and API co
 - **Tests**
   - `IntegrationTests`: Testcontainers, end-to-end.
   - `UnitTests`: xUnit, Moq, FluentAssertions.
-- **docs/db**: DB diagrams, migration logs, and documentation.
 
 ---
 
@@ -83,7 +80,7 @@ This document outlines the technical design, requirements, structure, and API co
 
 ## 4. API Base Responses
 
-All API responses follow HTTP standards. No "magic" exceptions; errors are surfaced as RFC 7807 ProblemDetails.
+All API responses follow HTTP standards. Errors are surfaced as RFC 7807 ProblemDetails.
 
 ### 4.1 Success (2xx)
 ```json
@@ -175,7 +172,7 @@ All endpoints are under `/api/v1/todos`. JWT Bearer required except login/regist
 - Request: Full DTO
 - Response: Updated Todo DTO
 
-#### Patch Todo (Mark as Done)
+#### Patch Todo (Toggle Done)
 - **PATCH** `/api/v1/todos/{id}/done`
 - Request: `{ "done": true }`
 - Response: Updated Todo DTO

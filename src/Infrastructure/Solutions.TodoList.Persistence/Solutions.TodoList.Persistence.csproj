@@ -6,4 +6,12 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Solutions.TodoList.Application\Solutions.TodoList.Application.csproj" />
+      <ProjectReference Include="..\..\Core\Solutions.TodoList.Domain\Solutions.TodoList.Domain.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.8" />
+    </ItemGroup>
 </Project>
