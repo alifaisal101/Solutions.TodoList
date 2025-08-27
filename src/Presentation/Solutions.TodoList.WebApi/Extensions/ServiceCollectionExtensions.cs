@@ -30,7 +30,7 @@ public static class ServiceCollectionExtensions
             options.AddPolicy("DefaultCorsPolicy", builder =>
             {
                 builder
-                    .WithOrigins("https://localhost:5001") // CHANGE for your environment
+                    .WithOrigins("https://localhost:5001")
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
@@ -39,11 +39,6 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>
-    /// Lightweight OpenAPI / Swagger registration that:
-    /// - shows enums as strings (via serializer settings)
-    /// - adds JWT bearer support entry (for Swagger UI)
-    /// </summary>
     public static IServiceCollection AddSwaggerWithJwt(this IServiceCollection services)
     {
         services.AddEndpointsApiExplorer();
@@ -56,23 +51,29 @@ public static class ServiceCollectionExtensions
                 Description = "Todo List API - API surface for initial endpoints"
             });
 
-            // Add JWT Authorization button to swagger
-            var jwtSecurity = new OpenApiSecurityScheme
+            var jwtSecurityScheme = new OpenApiSecurityScheme
             {
                 Name = "Authorization",
+                Description = "Enter JWT Bearer token in the format: Bearer {your token}\n\n"
+                              + "If you only paste the token, make sure to include the 'Bearer ' prefix.",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT",
-                Description = "JWT Authorization header using the Bearer scheme."
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
             };
-            opts.AddSecurityDefinition("Bearer", jwtSecurity);
+
+            opts.AddSecurityDefinition(jwtSecurityScheme.Reference.Id, jwtSecurityScheme);
+
             opts.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
-                [ jwtSecurity ] = Array.Empty<string>()
+                [ jwtSecurityScheme ] = Array.Empty<string>()
             });
 
-            // Include XML comments if present
             var xmlFile = $"{Assembly.GetEntryAssembly()?.GetName().Name}.xml";
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             if (File.Exists(xmlPath))
@@ -81,6 +82,7 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
 
     /// <summary>
     /// Register application-level dependencies (MediatR, validators).

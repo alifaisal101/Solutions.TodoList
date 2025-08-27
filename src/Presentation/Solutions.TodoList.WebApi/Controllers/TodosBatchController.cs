@@ -5,7 +5,7 @@ using Solutions.TodoList.Application.Common;
 using Solutions.TodoList.Application.Features.TodoBatch.Commands.BatchCreateTodos;
 using Solutions.TodoList.Application.Features.TodoBatch.Commands.BatchDeleteTodos;
 using Solutions.TodoList.Application.Features.TodoBatch.Commands.BatchMarkTodosDone;
-using Solutions.TodoList.Application.Requests.Todo;
+using Solutions.TodoList.Application.Requests.Todos;
 using Solutions.TodoList.Domain.Dtos;
 
 namespace Solutions.TodoList.WebApi.Controllers;

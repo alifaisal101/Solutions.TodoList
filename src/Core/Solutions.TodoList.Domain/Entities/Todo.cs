@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using Solutions.TodoList.Domain.Common;
 using Solutions.TodoList.Domain.Events;
 
@@ -11,6 +12,7 @@ public class Todo : EntityBase, IHasDomainEvents
     public DateTime? CompletedAtUtc { get; private set; }
     public Guid UserId { get; private set; }
 
+    [NotMapped]
     public List<DomainEvent> DomainEvents { get; set; } = [];
 
     protected Todo() { }

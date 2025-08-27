@@ -40,9 +40,6 @@ public class Startup(IConfiguration conf, IHostEnvironment env)
     /// </summary>
     public void Configure(WebApplication app)
     {
-        if (Env.IsDevelopment())
-            app.MapOpenApi();
-
         app.UseCommonMiddleware();
 
         app.MapControllers();
