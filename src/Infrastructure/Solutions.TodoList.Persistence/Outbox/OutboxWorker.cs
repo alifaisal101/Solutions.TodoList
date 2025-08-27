@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Solutions.TodoList.Application.Contracts.Cache;
+using Solutions.TodoList.Application.Contracts.Read.Cache;
 
 namespace Solutions.TodoList.Persistence.Outbox;
 

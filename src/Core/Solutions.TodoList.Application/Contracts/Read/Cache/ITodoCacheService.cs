@@ -1,6 +1,6 @@
 using Solutions.TodoList.Domain.Entities;
 
-namespace Solutions.TodoList.Application.Contracts.Cache;
+namespace Solutions.TodoList.Application.Contracts.Read.Cache;
 
 public interface ITodoCacheService
 {

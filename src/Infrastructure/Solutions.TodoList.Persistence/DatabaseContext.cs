@@ -8,6 +8,9 @@ namespace Solutions.TodoList.Persistence;
 public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbContext(options)
 {
     public DbSet<OutboxMessage> OutboxMessages { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<Todo> Todos { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -24,7 +27,6 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
         {
             OutboxMessages.Add(new OutboxMessage
             {
-                Id = Guid.NewGuid(),
                 Type = domainEvent.GetType().Name,
                 Payload = JsonSerializer.Serialize(domainEvent),
                 OccurredOnUtc = DateTime.UtcNow,

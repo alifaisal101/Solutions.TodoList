@@ -1,9 +1,10 @@
 using Microsoft.Extensions.Caching.Memory;
+using Solutions.TodoList.Application.Contracts.Read.Cache;
 using Solutions.TodoList.Domain.Entities;
 
 namespace Solutions.TodoList.Cache;
 
-public class InMemoryTodoCache(IMemoryCache cache)
+public class InMemoryTodoCache(IMemoryCache cache): IInMemoryTodoCache
 {
     private readonly TimeSpan _ttl = TimeSpan.FromMinutes(10);
 

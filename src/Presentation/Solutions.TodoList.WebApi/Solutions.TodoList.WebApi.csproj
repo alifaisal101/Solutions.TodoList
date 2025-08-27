@@ -8,7 +8,21 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.7"/>
+        <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="9.0.3" />
+        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerGen" Version="9.0.3" />
+        <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="9.0.3" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Solutions.TodoList.Application\Solutions.TodoList.Application.csproj" />
+      <ProjectReference Include="..\..\Core\Solutions.TodoList.Domain\Solutions.TodoList.Domain.csproj" />
+      <ProjectReference Include="..\..\Infrastructure\Read\Solutions.TodoList.Cache\Solutions.TodoList.Cache.csproj" />
+      <ProjectReference Include="..\..\Infrastructure\Read\Solutions.TodoList.Projections\Solutions.TodoList.Projections.csproj" />
+      <ProjectReference Include="..\..\Infrastructure\Solutions.TodoList.Identity\Solutions.TodoList.Identity.csproj" />
+      <ProjectReference Include="..\..\Infrastructure\Solutions.TodoList.Persistence\Solutions.TodoList.Persistence.csproj" />
+      <ProjectReference Include="..\..\Infrastructure\Solutions.TodoList.Security\Solutions.TodoList.Security.csproj" />
     </ItemGroup>
 
 </Project>

@@ -6,4 +6,13 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\..\Core\Solutions.TodoList.Application\Solutions.TodoList.Application.csproj" />
+      <ProjectReference Include="..\Solutions.TodoList.Persistence\Solutions.TodoList.Persistence.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
+    </ItemGroup>
+
 </Project>
