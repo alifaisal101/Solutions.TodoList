@@ -1,21 +1,19 @@
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Solutions.TodoList.Application.Common;
+using Solutions.TodoList.Application.Contracts.Identity;
 using Solutions.TodoList.Cache;
+using Solutions.TodoList.Identity.Settings;
 using Solutions.TodoList.Projections;
+using Solutions.TodoList.WebApi.Auth;
 
 namespace Solutions.TodoList.WebApi.Extensions;
 
-/// <summary>
-/// Service collection extension methods used by the WebApi host.
-/// </summary>
 public static class ServiceCollectionExtensions
 {
-    /// <summary>
-    /// Register presentation related services (controllers, JSON options, CORS).
-    /// Keep this thin so unit tests can register controllers in isolation.
-    /// </summary>
     public static IServiceCollection AddPresentation(this IServiceCollection services)
     {
         services.AddControllers()
@@ -83,29 +81,18 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-
-    /// <summary>
-    /// Register application-level dependencies (MediatR, validators).
-    /// Implementation should live in the Application project; this just registers by assembly.
-    /// </summary>
-    public static IServiceCollection AddApplication(this IServiceCollection services)
+    public static IServiceCollection AddReadAndCache(this IServiceCollection services)
     {
-        // Register MediatR handlers from Application assembly using a marker type
-        services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(RequestsMarker).Assembly));
-
-        // Uncomment when FluentValidation validators are present in the Application assembly:
-        // services.AddValidatorsFromAssembly(typeof(RequestsMarker).Assembly);
-
+        services.AddCacheServices();
+        services.AddReadServices();
         return services;
     }
-
-    /// <summary>
-    /// Register infrastructure-level dependencies (db, identity, cache, hosted services).
-    /// Keep minimal here - actual infrastructure registrations live in AddPersistence or infra projects.
-    /// </summary>
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services)
+    
+    public static IServiceCollection AddJwt(this IServiceCollection services, IConfiguration configuration)
     {
-        // JWT auth placeholder — configure TokenValidationParameters in real app
+        var jwt = configuration.GetSection("Jwt").Get<JwtSettings>()
+                  ?? throw new InvalidOperationException("Jwt settings are missing from configuration.");
+
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -113,21 +100,59 @@ public static class ServiceCollectionExtensions
         })
         .AddJwtBearer(options =>
         {
-            // configure in production: options.Authority / TokenValidationParameters / IssuerSigningKey
+            options.RequireHttpsMetadata = false; // set true in prod
+            options.SaveToken = true;
+
+            if (jwt.UseRsa)
+            {
+                if (string.IsNullOrWhiteSpace(jwt.RsaPublicKeyPem))
+                    throw new InvalidOperationException("Jwt:UseRsa = true but Jwt:RsaPublicKeyPem is empty.");
+
+                var rsa = RSA.Create();
+                rsa.ImportFromPem(jwt.RsaPublicKeyPem.ToCharArray());
+                var rsaKey = new RsaSecurityKey(rsa);
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = rsaKey,
+                    ValidateIssuer = true,
+                    ValidIssuer = jwt.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwt.Audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromSeconds(30)
+                };
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(jwt.SymmetricKey))
+                    throw new InvalidOperationException("Jwt:SymmetricKey is not configured.");
+
+                var keyBytes = Encoding.UTF8.GetBytes(jwt.SymmetricKey);
+                var signingKey = new SymmetricSecurityKey(keyBytes);
+
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = signingKey,
+                    ValidateIssuer = true,
+                    ValidIssuer = jwt.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = jwt.Audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromSeconds(30)
+                };
+            }
+
+            options.Events = new JwtBearerEvents
+            {
+                OnAuthenticationFailed = ctx => Task.CompletedTask
+            };
         });
 
         services.AddAuthorization();
-
-        return services;
-    }
-    
-    /// <summary>
-    /// Convenience to register both read + cache services.
-    /// </summary>
-    public static IServiceCollection AddReadAndCache(this IServiceCollection services)
-    {
-        services.AddCacheServices();
-        services.AddReadServices();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
         return services;
     }
 }

@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Solutions.TodoList.Application;
 using Solutions.TodoList.Identity;
 using Solutions.TodoList.Persistence;
 using Solutions.TodoList.Security;
@@ -24,14 +26,13 @@ public class Startup(IConfiguration conf, IHostEnvironment env)
         services.AddOpenApi();
         services.AddSwaggerWithJwt();
 
-        services.AddApplication();
-
-        services.AddInfrastructure();
         services.AddReadAndCache();
         services.AddPersistence(Conf);
         services.AddSecurity(Conf);
+        services.AddJwt(Conf);
         services.AddIdentityExtensions(Conf);
-
+        services.AddApplicationServices(Conf);
+        
         services.AddHttpContextAccessor();
     }
 
@@ -40,6 +41,13 @@ public class Startup(IConfiguration conf, IHostEnvironment env)
     /// </summary>
     public void Configure(WebApplication app)
     {
+        if (!Env.IsProduction())
+        {
+            using var scope = app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+            db.Database.Migrate();
+        }
+
         app.UseCommonMiddleware();
 
         app.MapControllers();
