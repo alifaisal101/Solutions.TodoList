@@ -19,11 +19,7 @@
     <ItemGroup>
       <ProjectReference Include="..\..\Core\Solutions.TodoList.Application\Solutions.TodoList.Application.csproj" />
       <ProjectReference Include="..\..\Core\Solutions.TodoList.Domain\Solutions.TodoList.Domain.csproj" />
-      <ProjectReference Include="..\..\Infrastructure\Read\Solutions.TodoList.Cache\Solutions.TodoList.Cache.csproj" />
-      <ProjectReference Include="..\..\Infrastructure\Read\Solutions.TodoList.Projections\Solutions.TodoList.Projections.csproj" />
-      <ProjectReference Include="..\..\Infrastructure\Solutions.TodoList.Identity\Solutions.TodoList.Identity.csproj" />
-      <ProjectReference Include="..\..\Infrastructure\Solutions.TodoList.Persistence\Solutions.TodoList.Persistence.csproj" />
-      <ProjectReference Include="..\..\Infrastructure\Solutions.TodoList.Security\Solutions.TodoList.Security.csproj" />
+      <ProjectReference Include="..\..\Infrastructure\Solutions.TodoList.Infrastructure\Solutions.TodoList.Infrastructure.csproj" />
     </ItemGroup>
 
 </Project>

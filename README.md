@@ -31,11 +31,12 @@ This document outlines the technical design, requirements, structure, and API co
 │   │   ├── Solutions.TodoList.Application
 │   │   └── Solutions.TodoList.Domain
 │   ├── Infrastructure
-│   │   ├── Read
-│   │   │   ├── Solutions.TodoList.Cache
-│   │   │   └── Solutions.TodoList.Projections
-│   │   ├── Solutions.TodoList.Identity
-│   │   └── Solutions.TodoList.Persistence
+│   │   └── Solutions.TodoList.Infrastructure
+│   │       ├── Cache
+│   │       ├── Projections
+│   │       ├── Identity
+│   │       ├── Persistence
+│   │       └── Security
 │   └── Presentation
 │       └── Solutions.TodoList.WebApi
 └── test
@@ -46,10 +47,11 @@ This document outlines the technical design, requirements, structure, and API co
 - **Core**
   - `Application`: Use cases, MediatR handlers, CQRS logic, DTOs, interfaces, validation, pipeline behaviors.
   - `Domain`: Entities, value objects, enums, domain events.
-- **Infrastructure**
-  - `Persistence`: EF Core context, migrations, PostgreSQL, repositories, data seeding.
-  - `Identity`: ASP.NET Core Identity, JWT, refresh tokens, RBAC policies.
-  - `Read/Cache`: Dapper, multi-layer cache, projections, materialized views, cache strategies.
+- **Infrastructure** — a single project, organized into folders by concern:
+  - `Persistence`: EF Core context, migrations, PostgreSQL, repositories, outbox.
+  - `Identity`: JWT, RSA-signed tokens, refresh tokens, RBAC policies.
+  - `Security`: Argon2 password hashing.
+  - `Cache` / `Projections`: Dapper, multi-layer cache, materialized views, read-side strategies.
 - **Presentation**
   - `WebApi`: Startup, DI, controllers, middleware, error handling, health checks, Swagger, versioning, CORS, rate limiting.
 - **Tests**

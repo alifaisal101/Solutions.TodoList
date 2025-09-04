@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Solutions.TodoList.Application;
-using Solutions.TodoList.Identity;
-using Solutions.TodoList.Persistence;
-using Solutions.TodoList.Security;
+using Solutions.TodoList.Infrastructure.Identity;
+using Solutions.TodoList.Infrastructure.Persistence;
+using Solutions.TodoList.Infrastructure.Security;
 using Solutions.TodoList.WebApi.Extensions;
 
 namespace Solutions.TodoList.WebApi;

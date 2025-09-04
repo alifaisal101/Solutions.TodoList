@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Solutions.TodoList.Application.Contracts.Identity;
-using Solutions.TodoList.Cache;
-using Solutions.TodoList.Identity.Settings;
-using Solutions.TodoList.Projections;
+using Solutions.TodoList.Infrastructure.Cache;
+using Solutions.TodoList.Infrastructure.Identity.Settings;
+using Solutions.TodoList.Infrastructure.Projections;
 using Solutions.TodoList.WebApi.Auth;
 
 namespace Solutions.TodoList.WebApi.Extensions;
