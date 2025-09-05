@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Solutions.TodoList.Application.Contracts.Read.Cache;
 
 namespace Solutions.TodoList.Infrastructure.Persistence.Outbox;
 
@@ -13,7 +12,6 @@ public class OutboxWorker(IServiceProvider serviceProvider) : BackgroundService
         {
             using var scope = serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
-            var cache = scope.ServiceProvider.GetRequiredService<ITodoCacheService>();
 
             var messages = await db.OutboxMessages
                 .Where(x => !x.Processed)
@@ -23,12 +21,6 @@ public class OutboxWorker(IServiceProvider serviceProvider) : BackgroundService
 
             foreach (var msg in messages)
             {
-                if (msg.Type is "TodoUpdated" or "TodoMarkedDone")
-                {
-                    var todoId = Guid.Parse(msg.Payload);
-                    await cache.InvalidateAsync(todoId, stoppingToken);
-                }
-
                 msg.Processed = true;
                 msg.ProcessedOnUtc = DateTime.UtcNow;
             }

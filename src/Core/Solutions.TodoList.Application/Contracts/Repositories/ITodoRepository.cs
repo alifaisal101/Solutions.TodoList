@@ -7,6 +7,7 @@ public interface ITodoRepository : IAsyncRepository<Todo>
 {
     Task<Todo?> GetByIdForUserAsync(Guid id, Guid userId);
     Task<IReadOnlyList<Todo>> ListByUserAsync(Guid userId, string? search, string? sort, int skip, int take);
+    Task<int> CountByUserAsync(Guid userId, string? search);
     Task BatchInsertAsync(IEnumerable<Todo> todos);
     Task BatchUpdateAsync(IEnumerable<Todo> todos);
     Task BatchMarkDoneAsync(IEnumerable<Guid> todoIds);

@@ -26,7 +26,6 @@ public class Startup(IConfiguration conf, IHostEnvironment env)
         services.AddOpenApi();
         services.AddSwaggerWithJwt();
 
-        services.AddReadAndCache();
         services.AddPersistence(Conf);
         services.AddSecurity(Conf);
         services.AddJwt(Conf);

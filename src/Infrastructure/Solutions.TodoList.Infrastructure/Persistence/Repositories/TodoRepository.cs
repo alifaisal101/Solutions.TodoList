@@ -14,20 +14,28 @@ public class TodoRepository(DatabaseContext context) : BaseRepository<Todo>(cont
 
     public async Task<IReadOnlyList<Todo>> ListByUserAsync(Guid userId, string? search, string? sort, int skip, int take)
     {
-        var q = context.Todos.Where(t => t.UserId == userId);
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var s = search.Trim();
-            q = q.Where(t => EF.Functions.ILike(t.Title, $"%{s}%") 
-                             || EF.Functions.ILike(t.Description, $"%{s}%"));
-        }
+        var q = FilterByUser(userId, search);
 
         q = (sort == "createdAt_desc")
             ? q.OrderByDescending(t => t.CreatedAtUtc)
             : q.OrderBy(t => t.CreatedAtUtc);
 
         return await q.Skip(skip).Take(take).ToListAsync();
+    }
+
+    public Task<int> CountByUserAsync(Guid userId, string? search) =>
+        FilterByUser(userId, search).CountAsync();
+
+    private IQueryable<Todo> FilterByUser(Guid userId, string? search)
+    {
+        var q = context.Todos.Where(t => t.UserId == userId);
+
+        if (string.IsNullOrWhiteSpace(search))
+            return q;
+
+        var s = search.Trim();
+        return q.Where(t => EF.Functions.ILike(t.Title, $"%{s}%")
+                            || EF.Functions.ILike(t.Description, $"%{s}%"));
     }
 
     public async Task BatchInsertAsync(IEnumerable<Todo> todos)

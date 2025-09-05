@@ -1,8 +1,6 @@
-using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using Solutions.TodoList.Domain.Common;
 using Solutions.TodoList.Infrastructure.Persistence.Outbox;
 
@@ -18,12 +16,6 @@ public static class PersistenceServiceRegistration
         var migrationsAssembly = typeof(DatabaseContext).Assembly.GetName().Name;
         services.AddDbContext<DatabaseContext>(options =>
             options.UseNpgsql(connStr, npgsql => npgsql.MigrationsAssembly(migrationsAssembly)));
-
-        services.AddScoped<IDbConnection>(_ =>
-        {
-            var connection = new NpgsqlConnection(connStr);
-            return connection;
-        });
 
         services.AddReposViaReflection();
         services.AddHostedService<OutboxWorker>();

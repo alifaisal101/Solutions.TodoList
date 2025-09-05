@@ -5,9 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Solutions.TodoList.Application.Contracts.Identity;
-using Solutions.TodoList.Infrastructure.Cache;
 using Solutions.TodoList.Infrastructure.Identity.Settings;
-using Solutions.TodoList.Infrastructure.Projections;
 using Solutions.TodoList.WebApi.Auth;
 
 namespace Solutions.TodoList.WebApi.Extensions;
@@ -81,13 +79,6 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddReadAndCache(this IServiceCollection services)
-    {
-        services.AddCacheServices();
-        services.AddReadServices();
-        return services;
-    }
-    
     public static IServiceCollection AddJwt(this IServiceCollection services, IConfiguration configuration)
     {
         var jwt = configuration.GetSection("Jwt").Get<JwtSettings>()
