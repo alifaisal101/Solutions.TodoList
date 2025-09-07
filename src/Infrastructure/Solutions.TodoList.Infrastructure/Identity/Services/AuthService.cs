@@ -45,20 +45,7 @@ public class AuthService : IAuthService
         var user = new User(request.Username, hashed, UserRole.User);
         await _usersRepo.AddAsync(user);
 
-        var (accessToken, refreshToken) = _tokens.CreateTokens(user);
-        var hashedRefresh = _tokens.HashRefreshToken(refreshToken);
-
-        var rt = new RefreshToken(user.Id, hashedRefresh, DateTime.UtcNow.Add(_refreshTokenLifetime));
-        await _refreshRepo.AddAsync(rt);
-
-        return new AuthDto
-        {
-            Id = user.Id,
-            Username = user.Username,
-            Role = user.Role.ToString(),
-            AccessToken = accessToken,
-            RefreshToken = refreshToken
-        };
+        return await IssueAuthAsync(user);
     }
 
     public async Task<AuthDto> LoginAsync(LoginRequest request)
@@ -71,20 +58,7 @@ public class AuthService : IAuthService
         if (!_hasher.Verify(request.Password, user.EncryptedPassword))
             throw new UnauthorizedAccessException("Invalid credentials.");
 
-        var (accessToken, refreshToken) = _tokens.CreateTokens(user);
-        var hashedRefresh = _tokens.HashRefreshToken(refreshToken);
-
-        var rt = new RefreshToken(user.Id, hashedRefresh, DateTime.UtcNow.Add(_refreshTokenLifetime));
-        await _refreshRepo.AddAsync(rt);
-
-        return new AuthDto
-        {
-            Id = user.Id,
-            Username = user.Username,
-            Role = user.Role.ToString(),
-            AccessToken = accessToken,
-            RefreshToken = refreshToken
-        };
+        return await IssueAuthAsync(user);
     }
 
     public async Task<AuthDto> RefreshTokenAsync(string refreshToken)
@@ -92,23 +66,36 @@ public class AuthService : IAuthService
         if (string.IsNullOrWhiteSpace(refreshToken))
             throw new ArgumentException("Refresh token is required.", nameof(refreshToken));
 
-        var hashed = _tokens.HashRefreshToken(refreshToken);
-        var stored = await _refreshRepo.GetByTokenAsync(hashed)
-                      ?? throw new UnauthorizedAccessException("Invalid refresh token.");
+        var stored = await _refreshRepo.GetByTokenAsync(_tokens.HashRefreshToken(refreshToken))
+                     ?? throw new UnauthorizedAccessException("Invalid refresh token.");
 
         if (stored.ExpiresAtUtc < DateTime.UtcNow || stored.RevokedAtUtc != null)
             throw new UnauthorizedAccessException("Invalid refresh token.");
 
-        // Revoke the old token
         await _refreshRepo.RevokeAsync(stored);
 
-        var user = await _usersRepo.GetByIdAsync(stored.UserId) ?? throw new InvalidOperationException("User not found.");
+        var user = await _usersRepo.GetByIdAsync(stored.UserId)
+                   ?? throw new InvalidOperationException("User not found.");
 
-        // Issue new tokens and persist hashed refresh
-        var (accessToken, newRefresh) = _tokens.CreateTokens(user);
-        var newHashed = _tokens.HashRefreshToken(newRefresh);
-        var newRt = new RefreshToken(user.Id, newHashed, DateTime.UtcNow.Add(_refreshTokenLifetime));
-        await _refreshRepo.AddAsync(newRt);
+        return await IssueAuthAsync(user);
+    }
+
+    public async Task LogoutAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return;
+
+        var stored = await _refreshRepo.GetByTokenAsync(_tokens.HashRefreshToken(refreshToken));
+        if (stored is { RevokedAtUtc: null })
+            await _refreshRepo.RevokeAsync(stored);
+    }
+
+    private async Task<AuthDto> IssueAuthAsync(User user)
+    {
+        var (accessToken, refreshToken) = _tokens.CreateTokens(user);
+        var expiresAtUtc = DateTime.UtcNow.Add(_refreshTokenLifetime);
+        var hashedRefresh = _tokens.HashRefreshToken(refreshToken);
+        await _refreshRepo.AddAsync(new RefreshToken(user.Id, hashedRefresh, expiresAtUtc));
 
         return new AuthDto
         {
@@ -116,7 +103,8 @@ public class AuthService : IAuthService
             Username = user.Username,
             Role = user.Role.ToString(),
             AccessToken = accessToken,
-            RefreshToken = newRefresh
+            RefreshToken = refreshToken,
+            RefreshTokenExpiresAtUtc = expiresAtUtc
         };
     }
 }
