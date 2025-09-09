@@ -1,10 +1,12 @@
+using Solutions.TodoList.Domain.ValueObjects;
+
 namespace Solutions.TodoList.Domain.Dtos;
 
 public class TodoDto
 {
     public Guid Id { get; set; }
-    public string Title { get; set; }
-    public string Description { get; set; }
+    public TodoTitle Title { get; set; }
+    public TodoDescription Description { get; set; }
     public bool Done { get; set; }
     public DateTime CreatedAtUtc { get; set; }
     public DateTime? UpdatedAtUtc { get; set; }

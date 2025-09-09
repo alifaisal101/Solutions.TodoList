@@ -24,7 +24,7 @@ public class UpdateTodoCommandHandler(
         if (existing == null)
             return new ApiResponse<TodoDto>(null, null, false, "Resource not found");
 
-        existing.Update(request.Title.Trim(), request.Description?.Trim() ?? string.Empty);
+        existing.Update(request.Title, request.Description);
         var updated = await repo.UpdateAsync(existing);
 
         var dto = ToDto(updated);

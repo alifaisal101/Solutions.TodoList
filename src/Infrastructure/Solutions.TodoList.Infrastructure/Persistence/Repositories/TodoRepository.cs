@@ -34,8 +34,8 @@ public class TodoRepository(DatabaseContext context) : BaseRepository<Todo>(cont
             return q;
 
         var s = search.Trim();
-        return q.Where(t => EF.Functions.ILike(t.Title, $"%{s}%")
-                            || EF.Functions.ILike(t.Description, $"%{s}%"));
+        return q.Where(t => EF.Functions.ILike(t.Title.Value, $"%{s}%")
+                            || EF.Functions.ILike(t.Description.Value, $"%{s}%"));
     }
 
     public async Task BatchInsertAsync(IEnumerable<Todo> todos)

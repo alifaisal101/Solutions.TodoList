@@ -12,6 +12,24 @@ public class DatabaseContext(DbContextOptions<DatabaseContext> options) : DbCont
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<Todo> Todos { get; set; }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Todo>(todo =>
+        {
+            todo.ComplexProperty(t => t.Title)
+                .Property(t => t.Value)
+                .HasColumnName("Title")
+                .IsRequired();
+
+            todo.ComplexProperty(t => t.Description)
+                .Property(t => t.Value)
+                .HasColumnName("Description")
+                .IsRequired();
+        });
+    }
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var domainEvents = ChangeTracker

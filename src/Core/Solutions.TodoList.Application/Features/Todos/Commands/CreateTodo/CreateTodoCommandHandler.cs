@@ -21,7 +21,7 @@ public class CreateTodoCommandHandler(
         if (userId == null)
             return new ApiResponse<TodoDto>(null, null, false, "Unauthorized");
 
-        var todo = new Todo(userId.Value, request.Title.Trim(), request.Description?.Trim() ?? string.Empty);
+        var todo = new Todo(userId.Value, request.Title, request.Description);
 
         var created = await repo.AddAsync(todo);
 

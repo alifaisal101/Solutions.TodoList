@@ -1,13 +1,14 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using Solutions.TodoList.Domain.Common;
 using Solutions.TodoList.Domain.Events;
+using Solutions.TodoList.Domain.ValueObjects;
 
 namespace Solutions.TodoList.Domain.Entities;
 
 public class Todo : EntityBase, IHasDomainEvents
 {
-    public string Title { get; private set; }
-    public string Description { get; private set; }
+    public TodoTitle Title { get; private set; }
+    public TodoDescription Description { get; private set; }
     public bool Done { get; private set; }
     public DateTime? CompletedAtUtc { get; private set; }
     public Guid UserId { get; private set; }
@@ -17,7 +18,7 @@ public class Todo : EntityBase, IHasDomainEvents
 
     protected Todo() { }
 
-    public Todo(Guid userId, string title, string description)
+    public Todo(Guid userId, TodoTitle title, TodoDescription description)
     {
         UserId = userId;
         Title = title;
@@ -35,7 +36,7 @@ public class Todo : EntityBase, IHasDomainEvents
         DomainEvents.Add(new TodoMarkedDoneEvent(Id));
     }
 
-    public void Update(string title, string description)
+    public void Update(TodoTitle title, TodoDescription description)
     {
         Title = title;
         Description = description;
