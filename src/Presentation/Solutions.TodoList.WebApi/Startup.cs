@@ -3,6 +3,7 @@ using Solutions.TodoList.Application;
 using Solutions.TodoList.Infrastructure.Identity;
 using Solutions.TodoList.Infrastructure.Persistence;
 using Solutions.TodoList.Infrastructure.Security;
+using Solutions.TodoList.WebApi.Errors;
 using Solutions.TodoList.WebApi.Extensions;
 
 namespace Solutions.TodoList.WebApi;
@@ -22,6 +23,9 @@ public class Startup(IConfiguration conf, IHostEnvironment env)
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddPresentation();
+
+        services.AddProblemDetails();
+        services.AddExceptionHandler<GlobalExceptionHandler>();
 
         services.AddOpenApi();
         services.AddSwaggerWithJwt();

@@ -4,6 +4,8 @@ public static class ApplicationBuilderExtensions
 {
     public static WebApplication UseCommonMiddleware(this WebApplication app)
     {
+        app.UseExceptionHandler();
+
         if (!app.Environment.IsProduction())
         {
             app.MapOpenApi();
