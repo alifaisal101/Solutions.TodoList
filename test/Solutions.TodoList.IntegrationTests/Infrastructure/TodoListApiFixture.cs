@@ -2,7 +2,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 using Testcontainers.PostgreSql;
 
 namespace Solutions.TodoList.IntegrationTests.Infrastructure;
@@ -16,34 +15,36 @@ public sealed class TodoListApiFixture : IAsyncLifetime
         .WithPassword("postgres")
         .Build();
 
+    private readonly Dictionary<string, string?> _settings = new()
+    {
+        ["Jwt__Issuer"] = "todo-api",
+        ["Jwt__Audience"] = "todo-api-client",
+        ["Jwt__AccessTokenMinutes"] = "30",
+        ["Jwt__RefreshTokenDays"] = "7",
+        ["Jwt__UseRsa"] = "false",
+        ["Jwt__SymmetricKey"] = "integration-tests-symmetric-signing-key-please-change",
+        ["Argon2__Iterations"] = "1",
+        ["Argon2__MemoryKb"] = "8192",
+        ["Argon2__DegreeOfParallelism"] = "1",
+        ["Argon2__SaltSize"] = "16",
+        ["Argon2__HashSize"] = "32"
+    };
+
     public WebApplicationFactory<Program> Factory { get; private set; } = null!;
 
     public async Task InitializeAsync()
     {
         await _postgres.StartAsync();
 
-        Factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        {
-            builder.UseEnvironment("IntegrationTests");
-            builder.ConfigureAppConfiguration((_, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["ConnectionStrings:DefaultConnection"] = _postgres.GetConnectionString(),
-                    ["Jwt:Issuer"] = "todo-api",
-                    ["Jwt:Audience"] = "todo-api-client",
-                    ["Jwt:AccessTokenMinutes"] = "30",
-                    ["Jwt:RefreshTokenDays"] = "7",
-                    ["Jwt:UseRsa"] = "false",
-                    ["Jwt:SymmetricKey"] = "integration-tests-symmetric-signing-key-please-change",
-                    ["Argon2:Iterations"] = "1",
-                    ["Argon2:MemoryKb"] = "8192",
-                    ["Argon2:DegreeOfParallelism"] = "1",
-                    ["Argon2:SaltSize"] = "16",
-                    ["Argon2:HashSize"] = "32"
-                });
-            });
-        });
+        // The app reads configuration in Startup.ConfigureServices (invoked from Program before
+        // builder.Build()), so the settings must exist in the default sources. Environment variables
+        // are read by WebApplication.CreateBuilder immediately, unlike ConfigureAppConfiguration.
+        _settings["ConnectionStrings__DefaultConnection"] = _postgres.GetConnectionString();
+        foreach (var (key, value) in _settings)
+            Environment.SetEnvironmentVariable(key, value);
+
+        Factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder => builder.UseEnvironment("IntegrationTests"));
 
         // Forces the host to boot, which applies EF migrations against the container.
         _ = Factory.CreateClient();
@@ -66,7 +67,14 @@ public sealed class TodoListApiFixture : IAsyncLifetime
         return client;
     }
 
-    public Task DisposeAsync() => Task.WhenAll(Factory.DisposeAsync().AsTask(), _postgres.DisposeAsync().AsTask());
+    public async Task DisposeAsync()
+    {
+        foreach (var key in _settings.Keys)
+            Environment.SetEnvironmentVariable(key, null);
+
+        await Factory.DisposeAsync();
+        await _postgres.DisposeAsync();
+    }
 
     public sealed record AuthResponseDto(Guid Id, string Username, string Role, string AccessToken);
 }
