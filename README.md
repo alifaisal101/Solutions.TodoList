@@ -10,8 +10,8 @@ This document outlines the technical design, requirements, structure, and API co
 - **Architecture**: Clean Architecture (Onion), layered as Domain, Application, Infrastructure, Presentation
 - **CQRS & Mediation**: MediatR for commands/queries, separate read/write flows
 - **Database**: PostgreSQL (EF Core), multiple migrations, UTC timestamps, seeding (users, roles, todos)
-- **Identity & Auth**: ASP.NET Core Identity, JWT (RSA256, key pair), refresh tokens (rotation & revocation, DB-persisted)
-- **Validation**: FluentValidation pipeline for all request models
+- **Identity & Auth**: JWT (symmetric HMAC or RSA), refresh tokens (rotation & revocation, DB-persisted) delivered as an HttpOnly cookie
+- **Validation**: Value objects with throwing constructors and System.Text.Json converters
 - **Error Handling**: Global middleware, RFC 7807 ProblemDetails everywhere, no exceptions for business logic flow
 - **OpenAPI/Swagger**: Enabled, enums as strings, examples, JWT integration, grouped endpoints
 - **HTTP Client Factory**: Used for external calls (e.g., http://ip-api.com/json/8.8.8.8)
@@ -19,7 +19,7 @@ This document outlines the technical design, requirements, structure, and API co
 - **Docker**: Dockerfile for API, optional docker-compose (API + Postgres)
 - **API Design**: Versioned (`/api/v1`), pagination/filtering/sorting, batch endpoints, consistent base responses
 - **Testing**: xUnit + FluentAssertions + Moq for unit, Testcontainers for integration (Postgres)
-- **Other**: Multi-layer cache (in-memory + materialized views), Dapper + EF Core, API auditing/logging, correlation IDs, health checks, feature flags, localization, DB migrations automated on startup (except production), extensible validation, command validation pipeline, ProblemDetails extensions, consistent responses
+- **Other**: EF Core, correlation IDs, health checks, DB migrations automated on startup (except production), consistent responses
 
 ---
 
@@ -32,16 +32,15 @@ This document outlines the technical design, requirements, structure, and API co
 │   │   └── Solutions.TodoList.Domain
 │   ├── Infrastructure
 │   │   └── Solutions.TodoList.Infrastructure
-│   │       ├── Cache
-│   │       ├── Projections
 │   │       ├── Identity
 │   │       ├── Persistence
 │   │       └── Security
 │   └── Presentation
 │       └── Solutions.TodoList.WebApi
-└── test
-    ├── Solutions.TodoList.IntegrationTests
-    └── Solutions.TodoList.UnitTests
+├── test
+│   ├── Solutions.TodoList.IntegrationTests
+│   └── Solutions.TodoList.UnitTests
+└── ui                       # React + Vite + TypeScript client
 ```
 
 - **Core**
@@ -49,14 +48,14 @@ This document outlines the technical design, requirements, structure, and API co
   - `Domain`: Entities, value objects, enums, domain events.
 - **Infrastructure** — a single project, organized into folders by concern:
   - `Persistence`: EF Core context, migrations, PostgreSQL, repositories, outbox.
-  - `Identity`: JWT, RSA-signed tokens, refresh tokens, RBAC policies.
+  - `Identity`: JWT (symmetric or RSA), refresh tokens via HttpOnly cookie, RBAC.
   - `Security`: Argon2 password hashing.
-  - `Cache` / `Projections`: Dapper, multi-layer cache, materialized views, read-side strategies.
 - **Presentation**
-  - `WebApi`: Startup, DI, controllers, middleware, error handling, health checks, Swagger, versioning, CORS, rate limiting.
+  - `WebApi`: controllers, middleware, RFC 7807 error handling, health checks, Swagger, versioning, CORS.
 - **Tests**
-  - `IntegrationTests`: Testcontainers, end-to-end.
-  - `UnitTests`: xUnit, Moq, FluentAssertions.
+  - `IntegrationTests`: Testcontainers (Postgres) + WebApplicationFactory.
+  - `UnitTests`: xUnit, FluentAssertions.
+- **UI** — `ui/`: React + Vite + TypeScript client with cookie-based auth.
 
 ---
 
